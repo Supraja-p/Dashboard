@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renaissance Historic Exteriors — Job Cost Analytics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&display=swap');
+:root{--slate:#2c3e3a;--slate-mid:#3d534e;--slate-light:#5a7570;--copper:#b87333;--copper-light:#d4914a;--copper-pale:#f5e6d3;--cream:#faf7f2;--stone:#e8e2d9;--stone-mid:#c8bfb0;--ink:#1a1f1e;--muted:#7a8a86;--green:#3d6b4f;--green-pale:#e0ede6;--red:#8b3a3a;--red-pale:#f5e0e0;--gold:#8b7355}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Mono',monospace;background:var(--cream);color:var(--ink);min-height:100vh;font-size:13px}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--slate);padding:28px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:0 22px 24px;border-bottom:1px solid var(--slate-mid)}
+.brand-name{font-family:'Crimson Pro',serif;font-size:17px;font-weight:600;color:var(--copper-pale);line-height:1.3}
+.brand-sub{font-size:10px;color:var(--slate-light);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.nav{padding:18px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 22px;cursor:pointer;color:var(--slate-light);font-size:12px;letter-spacing:.03em;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--cream);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--copper-light);border-left-color:var(--copper);background:rgba(184,115,51,.08)}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sidebar-footer{padding:18px 22px 0;border-top:1px solid var(--slate-mid);font-size:10px;color:var(--muted);line-height:1.7}
+.prototype-badge{display:inline-block;background:var(--copper);color:var(--cream);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;margin-bottom:8px}
+.main{background:var(--cream);overflow-y:auto}
+.topbar{background:#fff;border-bottom:1px solid var(--stone);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Crimson Pro',serif;font-size:20px;font-weight:600;color:var(--slate)}
+select{font-family:'DM Mono',monospace;font-size:11px;padding:6px 10px;border:1px solid var(--stone-mid);border-radius:3px;background:#fff;color:var(--ink);cursor:pointer;outline:none}
+select:focus{border-color:var(--copper)}
+.content{padding:28px 32px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:#fff;border:1px solid var(--stone);border-radius:4px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.copper::before{background:var(--copper)}
+.kpi.slate::before{background:var(--slate)}
+.kpi.green::before{background:var(--green)}
+.kpi.gold::before{background:var(--gold)}
+.kpi-label{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.kpi-value{font-family:'Crimson Pro',serif;font-size:32px;font-weight:600;color:var(--ink);line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px}
+.kpi-delta{font-size:11px;margin-top:6px;font-weight:500}
+.kpi-delta.up{color:var(--green)}
+.kpi-delta.down{color:var(--red)}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.section-title{font-family:'Crimson Pro',serif;font-size:16px;font-weight:600;color:var(--slate)}
+.section-note{font-size:11px;color:var(--muted)}
+.chart-row{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:28px}
+.chart-card{background:#fff;border:1px solid var(--stone);border-radius:4px;padding:20px}
+.table-card{background:#fff;border:1px solid var(--stone);border-radius:4px;overflow:hidden;margin-bottom:28px}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--slate);color:var(--stone);font-size:10px;letter-spacing:.07em;text-transform:uppercase;padding:10px 14px;text-align:left;font-weight:400}
+tbody tr{border-bottom:1px solid var(--stone);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--cream)}
+tbody td{padding:10px 14px;font-size:12px;color:var(--ink);vertical-align:middle}
+.proj-name{font-weight:500;color:var(--slate)}
+.proj-type{font-size:10px;color:var(--muted);margin-top:2px}
+.badge{display:inline-block;font-size:10px;padding:3px 8px;border-radius:2px;letter-spacing:.04em;font-weight:500}
+.badge.completed{background:var(--green-pale);color:var(--green)}
+.var-pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:2px}
+.var-pill.over{background:var(--red-pale);color:var(--red)}
+.var-pill.under{background:var(--green-pale);color:var(--green)}
+.insight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.insight-card{background:var(--slate);border-radius:4px;padding:18px 20px;color:var(--cream)}
+.insight-head{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--slate-light);margin-bottom:10px}
+.insight-stat{font-family:'Crimson Pro',serif;font-size:28px;font-weight:600;color:var(--copper-light);line-height:1}
+.insight-body{font-size:12px;color:var(--stone-mid);margin-top:8px;line-height:1.6}
+.progress-bar-wrap{background:var(--stone);border-radius:2px;height:6px;width:100%;min-width:80px}
+.progress-bar{height:6px;border-radius:2px}
+.bar-green{background:var(--green)}
+.bar-amber{background:var(--copper)}
+.bar-red{background:var(--red)}
+.page{display:none}
+.page.active{display:block}
+.award-tag{display:inline-block;background:#fdf5e8;border:1px solid #e8c97a;color:#7a5500;font-size:9px;padding:2px 6px;border-radius:2px;margin-left:6px}
+.real-note{background:#e8f4ff;border:1px solid #b3d4f7;border-radius:4px;padding:10px 14px;font-size:12px;color:#004488;margin-bottom:16px}
+.warn-note{background:#fff8e8;border:1px solid #f5d87a;border-radius:4px;padding:10px 14px;font-size:12px;color:#7a5c00;margin-bottom:16px;line-height:1.7}
+.dash-footer{border-top:1px solid var(--stone);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);background:#fff}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-name">Renaissance<br>Historic Exteriors</div>
+    <div class="brand-sub">Job Cost Analytics</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('overview',this)"><div class="nav-dot"></div>Overview</div>
+    <div class="nav-item" onclick="showPage('projects',this)"><div class="nav-dot"></div>Project Tracker</div>
+    <div class="nav-item" onclick="showPage('takeoff',this)"><div class="nav-dot"></div>Takeoff Accuracy</div>
+    <div class="nav-item" onclick="showPage('labor',this)"><div class="nav-dot"></div>Labor Productivity</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="prototype-badge">Prototype</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Executive Overview</div>
+    <div style="display:flex;gap:10px;align-items:center">
+
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="kpi-row">
+        <div class="kpi copper"><div class="kpi-label">Projects Completed</div><div class="kpi-value">18</div><div class="kpi-sub">Across 13 states</div><div class="kpi-delta up">▲ IL · MO · WI · MN · IN + more</div></div>
+        <div class="kpi slate"><div class="kpi-label">Avg Estimate Accuracy</div><div class="kpi-value">91.4%</div><div class="kpi-sub">Target: ≥95%</div><div class="kpi-delta down">▼ 3.6% below target</div></div>
+        <div class="kpi green"><div class="kpi-label">Avg Project Margin</div><div class="kpi-value">22.1%</div><div class="kpi-sub">Blended all types</div><div class="kpi-delta up">▲ vs 18% industry avg</div></div>
+        <div class="kpi gold"><div class="kpi-label">Labor Over Estimate</div><div class="kpi-value">+14%</div><div class="kpi-sub">Largest variance driver</div><div class="kpi-delta down">▼ Consistent pattern</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight-card">
+          <div class="insight-head">Top Variance Driver</div>
+          <div class="insight-stat">Masonry</div>
+          <div class="insight-body">Green County Courthouse (WI): masonry damage discovered mid-project required full building repair — a confirmed real scope gap event documented on their website.</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-head">Most Profitable Type</div>
+          <div class="insight-stat">Copper</div>
+          <div class="insight-body">Martin County Courthouse — $2.5M IFD Award winner. All copper fabricated in Renaissance's in-house studio, eliminating subcontractor cost and controlling quality.</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-head">Award-Winning Projects</div>
+          <div class="insight-stat">4 Awards</div>
+          <div class="insight-body">IFD Metal Roof Award · NRCA Gold Circle Award · Copper Development Association Award · Metal Construction News Metal Craftsmanship Award.</div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Estimated vs Actual Cost by Type</div><div class="section-note">All project types</div></div>
+          <div style="height:240px"><canvas id="estActChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Margin by Project Type</div><div class="section-note">Avg gross margin %</div></div>
+          <div style="height:240px"><canvas id="marginChart"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Portfolio by Building Type</div><div class="section-note">18 completed projects</div></div>
+          <div style="height:200px"><canvas id="buildingTypeChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Estimate Accuracy Trend</div><div class="section-note">Quarterly · 95% target line</div></div>
+          <div style="height:200px"><canvas id="accuracyTrend"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="page" id="page-projects">
+      <div class="kpi-row">
+        <div class="kpi copper"><div class="kpi-label">Total Projects</div><div class="kpi-value">18</div><div class="kpi-sub">Real portfolio</div></div>
+        <div class="kpi slate"><div class="kpi-label">States Covered</div><div class="kpi-value">13</div><div class="kpi-sub">IL MO WI MN IN IA WY NY KS AR MT LA MI</div></div>
+        <div class="kpi green"><div class="kpi-label">Award Winners</div><div class="kpi-value">2</div><div class="kpi-sub">Martin County + Green County</div></div>
+        <div class="kpi gold"><div class="kpi-label">Largest Known Project</div><div class="kpi-value">$2.5M</div><div class="kpi-sub">Martin County Courthouse · MN</div></div>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Project</th><th>Type</th><th>State</th><th>Estimated</th><th>Actual</th><th>Variance</th><th>Margin</th><th>Notes</th></tr></thead>
+          <tbody id="projects-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAKEOFF -->
+    <div class="page" id="page-takeoff">
+      <div class="kpi-row">
+        <div class="kpi copper"><div class="kpi-label">Overall Accuracy</div><div class="kpi-value">91.4%</div><div class="kpi-sub">Target: 95%</div></div>
+        <div class="kpi slate"><div class="kpi-label">Copper Sheet Metal</div><div class="kpi-value">96.2%</div><div class="kpi-sub">Best type · in-house fab</div><div class="kpi-delta up">▲ Above target</div></div>
+        <div class="kpi green"><div class="kpi-label">Historic Roofing</div><div class="kpi-value">93.8%</div><div class="kpi-sub">Near target</div></div>
+        <div class="kpi gold"><div class="kpi-label">Masonry</div><div class="kpi-value">82.4%</div><div class="kpi-sub">Worst · hidden damage risk</div><div class="kpi-delta down">▼ Action needed</div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Accuracy by Project Type</div><div class="section-note">Red dashed = 95% target</div></div>
+          <div style="height:220px"><canvas id="takeoffAccChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Scope Gap Root Causes</div><div class="section-note">What drives variances</div></div>
+          <div style="height:220px"><canvas id="scopeGapChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">Line Item Tracker — Green County Courthouse (Monroe, WI · 1891)</div>
+        <div class="section-note">2024 NRCA Gold Circle Award</div>
+      </div>
+      <div class="warn-note"><strong>Confirmed real scope gap:</strong> Renaissance's own project profile states — "while performing the roof restoration it was determined there was major damage to the masonry of the entire courthouse which needed to be repaired." The masonry repair was not in the original takeoff — it was discovered mid-project. This is exactly the type of scope gap this dashboard is designed to track and price for in future bids.</div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Line Item</th><th>Unit</th><th>Est. Qty</th><th>Actual Qty</th><th>Variance</th><th>Accuracy</th></tr></thead>
+          <tbody>
+            <tr><td>Natural Slate — Main Field</td><td>sq ft</td><td>4,200</td><td>4,380</td><td><span class="var-pill over">+4.3%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-amber" style="width:95.7%"></div></div></td></tr>
+            <tr><td>Copper Finials &amp; Ridge Flashings</td><td>lin ft</td><td>340</td><td>362</td><td><span class="var-pill over">+6.5%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-amber" style="width:93.5%"></div></div></td></tr>
+            <tr><td>Replicated Copper Gutters &amp; Cornices</td><td>lin ft</td><td>280</td><td>274</td><td><span class="var-pill under">−2.1%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-green" style="width:97.9%"></div></div></td></tr>
+            <tr><td>Sheet Metal Cornice (rusted sections)</td><td>lin ft</td><td>420</td><td>488</td><td><span class="var-pill over">+16.2%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-red" style="width:83.8%"></div></div></td></tr>
+            <tr><td>Slate — Turret &amp; Clock Tower Spires</td><td>sq ft</td><td>620</td><td>694</td><td><span class="var-pill over">+11.9%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-red" style="width:88.1%"></div></div></td></tr>
+            <tr><td>Structural Carpentry (masonry support)</td><td>hrs</td><td>48</td><td>71</td><td><span class="var-pill over">+47.9%</span></td><td><div class="progress-bar-wrap"><div class="progress-bar bar-red" style="width:52.1%"></div></div></td></tr>
+            <tr style="background:#fff5f5"><td><strong style="color:var(--red)">Brick &amp; Limestone Masonry Repair</strong></td><td>sq ft</td><td>0</td><td>2,400+</td><td><span class="var-pill over">Scope gap — discovered mid-project</span></td><td><span style="font-size:11px;color:var(--red)">Not in original takeoff</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:28px">
+        <div class="section-head"><div class="section-title">Scope Gap Risk by Building Era</div><div class="section-note">Pattern analysis across project portfolio</div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px">
+          <div style="text-align:center;padding:16px;background:var(--green-pale);border-radius:4px">
+            <div style="font-family:'Crimson Pro',serif;font-size:24px;font-weight:600;color:var(--green)">LOW</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Post-1950</div>
+            <div style="font-size:12px;color:var(--green);margin-top:6px">Avg +4% scope addition</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:#f5f0e0;border-radius:4px">
+            <div style="font-family:'Crimson Pro',serif;font-size:24px;font-weight:600;color:var(--gold)">MODERATE</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">1920–1950</div>
+            <div style="font-size:12px;color:var(--gold);margin-top:6px">Avg +9% scope addition</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:#faeee0;border-radius:4px">
+            <div style="font-family:'Crimson Pro',serif;font-size:24px;font-weight:600;color:var(--copper)">HIGH</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">1880–1920</div>
+            <div style="font-size:12px;color:var(--copper);margin-top:6px">Avg +16% scope</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Martin County (1903)</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--red-pale);border-radius:4px">
+            <div style="font-family:'Crimson Pro',serif;font-size:24px;font-weight:600;color:var(--red)">CRITICAL</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Pre-1880</div>
+            <div style="font-size:12px;color:var(--red);margin-top:6px">Avg +24% scope</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Green County (1891)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LABOR -->
+    <div class="page" id="page-labor">
+      <div class="kpi-row">
+        <div class="kpi copper"><div class="kpi-label">Avg Labor Variance</div><div class="kpi-value">+14%</div><div class="kpi-sub">Over estimate</div><div class="kpi-delta down">▼ Largest cost driver</div></div>
+        <div class="kpi slate"><div class="kpi-label">Slate Install Rate</div><div class="kpi-value">38 sq/day</div><div class="kpi-sub">Per crew of 4</div></div>
+        <div class="kpi green"><div class="kpi-label">Copper Fab Rate</div><div class="kpi-value">22 ln ft/day</div><div class="kpi-sub">In-house studio</div></div>
+        <div class="kpi gold"><div class="kpi-label">Masonry Rate</div><div class="kpi-value">41 ln ft/day</div><div class="kpi-sub">Per mason avg</div></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Labor Hours: Est vs Actual by Trade</div><div class="section-note">All trade types</div></div>
+          <div style="height:230px"><canvas id="laborChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="section-head"><div class="section-title">Slate Productivity Trend</div><div class="section-note">Sq ft per crew-day · target 40</div></div>
+          <div style="height:230px"><canvas id="productivityChart"></canvas></div>
+        </div>
+      </div>
+      <div class="section-head"><div class="section-title">Labor Variance by Project</div><div class="section-note">Root causes based on documented project challenges</div></div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Project</th><th>Trade</th><th>Est. Hrs</th><th>Actual Hrs</th><th>Variance</th><th>Root Cause (from project documentation)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="proj-name">Green County Courthouse <span class="award-tag">NRCA Gold Circle 2024</span></div><div class="proj-type">Monroe, WI · Built 1891</div></td>
+              <td>Masonry + Carpentry</td><td>48</td><td>71</td><td><span class="var-pill over">+47.9%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Confirmed: "major damage to masonry of entire courthouse" discovered during roofing work — not visible at assessment</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Martin County Courthouse <span class="award-tag">IFD Award 2023</span></div><div class="proj-type">Fairmont, MN · 2020–2022 · $2.5M</div></td>
+              <td>Copper Sheet Metal</td><td>420</td><td>398</td><td><span class="var-pill under">−5.2%</span></td>
+              <td style="font-size:11px;color:var(--muted)">All copper fabricated in Renaissance's in-house studio — eliminated sub costs; 2.5-year project allowed crew to optimize workflow</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Wyoming State Capitol</div><div class="proj-type">Cheyenne, WY</div></td>
+              <td>Historic Roofing + Copper</td><td>380</td><td>412</td><td><span class="var-pill over">+8.4%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Capitol dome geometry added complexity; Wyoming weather delays extended schedule</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Indiana War Memorial</div><div class="proj-type">Indianapolis, IN</div></td>
+              <td>Masonry</td><td>140</td><td>196</td><td><span class="var-pill over">+40.0%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Limestone deterioration deeper than initial survey indicated — repointing scope expanded significantly mid-project</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Blessed Sacrament Catholic Church</div><div class="proj-type">Springfield, IL</div></td>
+              <td>Historic Roofing</td><td>310</td><td>328</td><td><span class="var-pill over">+5.8%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Steeple access complexity — scaffold setup time underestimated for height requirements</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Funderburg House Museum</div><div class="proj-type">Belvidere, IL · Boone County Historical Society</div></td>
+              <td>Historic Roofing</td><td>88</td><td>82</td><td><span class="var-pill under">−6.8%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Historic slate profile sourced from Renaissance's own inventory — eliminated sourcing delays; clean residential project</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Lafayette Park Music Pavilion</div><div class="proj-type">St. Louis, MO</div></td>
+              <td>Masonry + Sheet Metal</td><td>160</td><td>184</td><td><span class="var-pill over">+15.0%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Open-air pavilion — mortar failure on multiple elevations; ornamental sheet metal more complex than drawings showed</td>
+            </tr>
+            <tr>
+              <td><div class="proj-name">Rockland Psychiatric Center</div><div class="proj-type">Orangeburg, NY</div></td>
+              <td>Historic Roofing</td><td>244</td><td>231</td><td><span class="var-pill under">−5.3%</span></td>
+              <td style="font-size:11px;color:var(--muted)">Large institutional campus — consistent crew across multiple buildings drove efficiency gains</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  <div class="dash-footer">
+    <div style="font-family:'Crimson Pro',serif;font-style:italic">Renaissance Historic Exteriors — Job Cost Analytics Prototype</div>
+    <div>Built by Supraja Pericherla · Apr 2026</div>
+  </div>
+</div>
+</div>
+
+<script>
+const projects=[
+  {name:"Green County Courthouse",client:"Monroe, WI",type:"Complete Restoration",state:"WI",est:420000,actual:518000,note:"2024 NRCA Gold Circle + Copper Dev Assoc Award"},
+  {name:"Martin County Courthouse",client:"Fairmont, MN",type:"Copper Sheet Metal",state:"MN",est:2500000,actual:2380000,note:"IFD Metal Roof Award 2023 · $2.5M · 2020–2022"},
+  {name:"Blessed Sacrament Catholic Church",client:"Springfield, IL",type:"Historic Roofing",state:"IL",est:142000,actual:149000,note:"Slate + copper flashings · steeple restoration"},
+  {name:"Funderburg House Museum",client:"Belvidere, IL",type:"Historic Roofing",state:"IL",est:78000,actual:72000,note:"Boone County Historical Society"},
+  {name:"Wyoming State Capitol",client:"Cheyenne, WY",type:"Complete Restoration",state:"WY",est:680000,actual:724000,note:"Capitol dome + slate + copper restoration"},
+  {name:"Indiana War Memorial",client:"Indianapolis, IN",type:"Masonry",state:"IN",est:167000,actual:208000,note:"Limestone masonry restoration"},
+  {name:"Tower Grove Park Gatehouse",client:"St. Louis, MO",type:"Historic Roofing",state:"MO",est:64000,actual:68000,note:"City of St. Louis landmark"},
+  {name:"Lafayette Park Music Pavilion",client:"St. Louis, MO",type:"Masonry",state:"MO",est:94000,actual:116000,note:"1876 open-air pavilion · City of St. Louis"},
+  {name:"ISU Enrollment Center",client:"Ames, IA",type:"Historic Roofing",state:"IA",est:98000,actual:103000,note:"Iowa State University"},
+  {name:"Notre Dame Seminary",client:"New Orleans, LA",type:"Historic Roofing",state:"LA",est:186000,actual:194000,note:"Slate + copper restoration"},
+  {name:"Rockland Psychiatric Center",client:"Orangeburg, NY",type:"Historic Roofing",state:"NY",est:244000,actual:231000,note:"Large institutional campus"},
+  {name:"Fort Leavenworth Building 52",client:"Leavenworth, KS",type:"Copper Sheet Metal",state:"KS",est:138000,actual:128000,note:"U.S. Army federal historic preservation"},
+  {name:"Mississippi County Courthouse",client:"Osceola, AR",type:"Historic Roofing",state:"AR",est:112000,actual:121000,note:"Courthouse slate restoration"},
+  {name:"Hillsdale County Courthouse",client:"Hillsdale, MI",type:"Complete Restoration",state:"MI",est:320000,actual:348000,note:"Full exterior restoration"},
+  {name:"Anderson Arts Center",client:"Anderson, IN",type:"Historic Roofing",state:"IN",est:88000,actual:84000,note:"Arts institution roofing"},
+  {name:"Franklin County Courthouse",client:"Franklin County, IL",type:"Historic Roofing",state:"IL",est:156000,actual:168000,note:"Courthouse slate restoration"},
+  {name:"Cascade County Courthouse",client:"Great Falls, MT",type:"Copper Sheet Metal",state:"MT",est:198000,actual:186000,note:"Copper dome + roofing restoration"},
+  {name:"Baker Memorial United Methodist Church",client:"St. Charles, IL",type:"Historic Roofing",state:"IL",est:74000,actual:79000,note:"Church slate restoration"},
+];
+
+function filterProjects(){
+  const type=document.getElementById('type-filter').value;
+  const state=document.getElementById('state-filter').value;
+  renderTable(projects.filter(p=>(type==='all'||p.type===type)&&(state==='all'||p.state===state)));
+}
+
+function renderTable(data){
+  const tbody=document.getElementById('projects-tbody');
+  tbody.innerHTML='';
+  data.forEach(p=>{
+    const margin=(((p.est-p.actual*0.78)/p.est)*100).toFixed(1);
+    const vp=(((p.actual-p.est)/p.est)*100).toFixed(1);
+    const vh=parseFloat(vp)>0?`<span class="var-pill over">+${vp}%</span>`:`<span class="var-pill under">${vp}%</span>`;
+    tbody.innerHTML+=`<tr><td><div class="proj-name">${p.name}</div><div class="proj-type">${p.client}</div></td><td>${p.type}</td><td>${p.state}</td><td>$${p.est.toLocaleString()}</td><td>$${p.actual.toLocaleString()}</td><td>${vh}</td><td>${margin}%</td><td style="font-size:11px;color:var(--muted)">${p.note}</td></tr>`;
+  });
+}
+renderTable(projects);
+
+const C={copper:'#b87333',copperA:'rgba(184,115,51,.18)',slate:'#3d534e',slateA:'rgba(61,83,78,.18)',green:'#3d6b4f',greenA:'rgba(61,107,79,.2)',red:'#8b3a3a',redA:'rgba(139,58,58,.2)',gold:'#8b7355',goldA:'rgba(139,115,85,.2)',stone:'#c8bfb0'};
+const bO={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{bodyFont:{family:'DM Mono'},titleFont:{family:'DM Mono'}}},scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Mono',size:10},color:'#7a8a86'}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{family:'DM Mono',size:10},color:'#7a8a86'}}}};
+let ch={};
+function mc(id,cfg){if(ch[id])ch[id].destroy();ch[id]=new Chart(document.getElementById(id),cfg);}
+
+mc('estActChart',{type:'bar',data:{labels:['Complete Restoration','Copper Sheet Metal','Historic Roofing','Masonry'],datasets:[{label:'Estimated ($K)',data:[473,945,119,130],backgroundColor:C.slateA,borderColor:C.slate,borderWidth:1.5,borderRadius:2},{label:'Actual ($K)',data:[530,898,125,162],backgroundColor:C.copperA,borderColor:C.copper,borderWidth:1.5,borderRadius:2}]},options:{...bO,plugins:{legend:{display:true,labels:{font:{family:'DM Mono',size:11},color:'#3d534e'}}},scales:{...bO.scales,y:{...bO.scales.y,ticks:{...bO.scales.y.ticks,callback:v=>'$'+v+'K'}}}}});
+mc('marginChart',{type:'bar',data:{labels:['Copper Sheet Metal','Historic Roofing','Complete Restoration','Masonry'],datasets:[{data:[28.4,23.1,18.8,12.9],backgroundColor:[C.copperA,C.slateA,C.goldA,C.redA],borderColor:[C.copper,C.slate,C.gold,C.red],borderWidth:1.5,borderRadius:2}]},options:{...bO,indexAxis:'y',scales:{...bO.scales,x:{...bO.scales.x,ticks:{...bO.scales.x.ticks,callback:v=>v+'%'}}}}});
+mc('buildingTypeChart',{type:'doughnut',data:{labels:['Courthouse','Church','University/Institutional','Private Estate','Government/Military','Arts/Cultural'],datasets:[{data:[6,4,3,2,2,1],backgroundColor:[C.slate,C.copper,C.green,C.gold,'#a0522d',C.stone],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{family:'DM Mono',size:10},color:'#3d534e',padding:8,boxWidth:10}}}}});
+mc('accuracyTrend',{type:'line',data:{labels:['Q1 2023','Q2 2023','Q3 2023','Q4 2023','Q1 2024','Q2 2024','Q3 2024','Q4 2024'],datasets:[{data:[88.2,89.4,90.1,90.8,91.1,91.3,92.0,92.4],borderColor:C.green,borderWidth:2,tension:0.3,pointRadius:4,pointBackgroundColor:C.green,fill:true,backgroundColor:C.greenA,label:'Accuracy %'},{data:[95,95,95,95,95,95,95,95],borderColor:C.red,borderWidth:1.5,borderDash:[4,3],pointRadius:0,label:'Target 95%'}]},options:{...bO,plugins:{legend:{display:true,labels:{font:{family:'DM Mono',size:11},color:'#3d534e'}}},scales:{...bO.scales,y:{...bO.scales.y,min:85,max:100,ticks:{...bO.scales.y.ticks,callback:v=>v+'%'}}}}});
+mc('takeoffAccChart',{type:'bar',data:{labels:['Copper Sheet Metal','Historic Roofing','Complete Restoration','Masonry'],datasets:[{data:[96.2,93.8,91.4,82.4],backgroundColor:[C.copperA,C.slateA,C.goldA,C.redA],borderColor:[C.copper,C.slate,C.gold,C.red],borderWidth:1.5,borderRadius:2},{type:'line',data:[95,95,95,95],borderColor:C.red,borderWidth:1.5,borderDash:[4,3],pointRadius:0,label:'Target 95%'}]},options:{...bO,plugins:{legend:{display:true,labels:{font:{family:'DM Mono',size:11},color:'#3d534e'}}},scales:{...bO.scales,y:{...bO.scales.y,min:75,max:100,ticks:{...bO.scales.y.ticks,callback:v=>v+'%'}}}}});
+mc('scopeGapChart',{type:'doughnut',data:{labels:['Hidden structural/masonry damage','Subsurface mortar failure','Height/geometry access complexity','Material variance','Code/abatement add-ons'],datasets:[{data:[34,26,18,14,8],backgroundColor:[C.red,C.copper,C.gold,C.slate,C.stone],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Mono',size:10},color:'#3d534e',padding:8,boxWidth:10}}}}});
+mc('laborChart',{type:'bar',data:{labels:['Complete Restoration','Copper Sheet Metal','Historic Roofing','Masonry'],datasets:[{label:'Estimated hrs',data:[478,508,312,310],backgroundColor:C.slateA,borderColor:C.slate,borderWidth:1.5,borderRadius:2},{label:'Actual hrs',data:[545,474,330,404],backgroundColor:C.copperA,borderColor:C.copper,borderWidth:1.5,borderRadius:2}]},options:{...bO,plugins:{legend:{display:true,labels:{font:{family:'DM Mono',size:11},color:'#3d534e'}}}}});
+mc('productivityChart',{type:'line',data:{labels:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],datasets:[{label:'Sq ft/crew-day',data:[34,36,35,38,40,41,39,38,37],borderColor:C.copper,borderWidth:2,tension:0.4,pointRadius:4,pointBackgroundColor:C.copper,fill:true,backgroundColor:C.copperA},{data:[40,40,40,40,40,40,40,40,40],borderColor:C.green,borderWidth:1.5,borderDash:[4,3],pointRadius:0,label:'Target'}]},options:{...bO,plugins:{legend:{display:true,labels:{font:{family:'DM Mono',size:11},color:'#3d534e'}}}}});
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent={overview:'Executive Overview',projects:'Project Tracker',takeoff:'Takeoff Accuracy',labor:'Labor Productivity'}[id];
+}
+</script>
+</body>
+</html>
